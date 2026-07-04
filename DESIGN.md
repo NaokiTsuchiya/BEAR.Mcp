@@ -140,19 +140,16 @@ final class McpExclude {}   // クラスレベル #[Mcp] からの個別除外
 ### 実行(tools/call)
 
 ```php
-final class ResourceToolHandler // mcp/sdk RuntimeToolHandlerInterface に接続
+// mcp/sdk の実 API(v0.6.0 で確認): Builder::add(Tool $definition, ElementHandlerInterface $handler)。
+// inputSchema は Tool 定義オブジェクト側に持たせ、ハンドラは execute() のみ実装する。
+final class ResourceToolHandler implements ToolHandlerInterface // Mcp\Server\Handler\ToolHandlerInterface
 {
     public function __construct(
         private ResourceInterface $resource,
         private ToolDescriptor $tool,   // uri, verb, inputSchema, annotations, linkRels
     ) {}
 
-    public function getInputSchema(): array
-    {
-        return $this->tool->inputSchema;
-    }
-
-    public function __invoke(array $arguments): CallToolResult
+    public function execute(array $arguments, ClientGateway $gateway): CallToolResult
     {
         try {
             $ro = $this->resource->{$this->tool->verb}($this->tool->uri, $arguments);
@@ -187,7 +184,7 @@ final class ResourceToolHandler // mcp/sdk RuntimeToolHandlerInterface に接続
 **公式 `mcp/sdk`(modelcontextprotocol/php-sdk、v0.6.0)一択**。
 
 1. `StreamableHttpTransport` が **PSR-7 in → PSR-7 out の純関数**でリクエストループを所有しない(php-mcp/server は ReactPHP 常駐で 2025-08 から休眠、logiscape は superglobals 直読みで PSR-7 ゼロ)。
-2. v0.6.0 の **Runtime Handler API**(`Builder::add()` + `RuntimeToolHandlerInterface` 等)は設定駆動のフレームワーク統合専用の口(Drupal 向けに追加)。リフレクションを SDK に渡さず `getInputSchema()` を自前供給できる — §3 の OptionsMethods 導出がそのまま接続する。
+2. v0.6.0 の **明示登録 API**(`Builder::add(Tool|ResourceDefinition|ResourceTemplate|Prompt $definition, ElementHandlerInterface $handler)` + `ToolHandlerInterface::execute()` / `ResourceHandlerInterface::read()` / `ResourceTemplateHandlerInterface::read()`)は設定駆動のフレームワーク統合専用の口。名前・スキーマ・説明を実行時に決めた `Tool` 定義オブジェクトで供給でき、リフレクションを SDK に渡さない — §3 の OptionsMethods 導出がそのまま接続する(スパイクで実在を確認済み)。
 3. セッションは `Psr16SessionStore` / `FileSessionStore` 抽象。
 4. spec 2025-11-25 対応。Drupal / API Platform / Nette / CakePHP が既に同 SDK 上に統合を構築済み。
 
@@ -340,6 +337,10 @@ class Todo extends ResourceObject
 - **v1 — ALPS 共有**: ToolUse の `AlpsSemanticDictionary` を optional 注入し、パラメータ description と completion 候補を強化(優先順位 JsonSchema > PHPDoc > ALPS は両パッケージ同一規則)。
 - **v1.x — 上流収斂の提案**: ToolUse の `SchemaConverter` は OptionsMethods が存在するのに純リフレクションを再実装している。**「ResourceObject の自己記述 → JSON Schema」を bear/resource(OptionsMethods)に一本化し、ToolUse・Mcp 双方が消費する**構図を bearsunday org に提案。併せて ToolUse への上流 PR 候補: `Schema\Tool` プロパティの安定 API 宣言、`collect()` と Registry 登録の分離(純関数化)、カスタム `#[Tool(name:)]` の動詞推測 `get` フォールバックの是正。
 
+**bear/resource への上流バグ報告(v0.1 実装中に発見・検証済み 2026-07-05)**:
+1. `OptionsMethods::getJsonSchema()` — `#[JsonSchema(params: 'x.json')]` のように `schema:` が空だと `{json_schema_dir}/`(ディレクトリ自体)を `file_exists` → `file_get_contents` → `json_decode` して JsonException。`schema === ''` は早期 return すべき。bear/mcp では `new OptionsMethods('/dev/null')` への切替で回避。
+2. `JsonSchemaInterceptor::invoke()` — 200/201 レスポンスに対し `schema:` の有無を確認せず `validateResponse()` を呼ぶため、params-only の `#[JsonSchema]` は実行時に必ず `JsonSchemaNotFoundException`。入力検証だけ使う宣言が事実上不可能。`OptionsMethods` の defaults 文字列化(`false` → `''`)も型情報を失う(bear/mcp はリフレクションから型付き default を復元)。
+
 ---
 
 ## 7. リスクと検証スパイク
@@ -348,7 +349,7 @@ class Todo extends ResourceObject
 |---|---|---|---|
 | 1 | **HTTP トランスポートの認証**(mcp/sdk の OAuth 2.1 RS 対応は未完) | 高 | v1 は stdio 第一級。HTTP は「信頼境界内(前段 PSR-15 ミドルウェアで Bearer 検証)」と明記。OAuth は SDK 追従で v2 |
 | 2 | **単一プリンシパル問題**(tools はアプリ権限で実行、「誰として」がない。Ray.Di にセッションスコープなし) | 高 | v1 のターゲットを「開発者の stdio」「サービスアカウント的 HTTP」と明示。per-request 可視性フックは v2 検討 |
-| 3 | **⚡実装初日の検証スパイク**: mcp/sdk のテンプレートマッチャが RFC 6570 form-style `{?id}` を解釈できるか未検証(確証があるのは `{var}` のみ。symfony/mcp-bundle はテンプレート非機能で出荷した実績あり) | 中 | 不可なら自前マッチャを Runtime Handler 側に持ち(構造上可能)、同時に上流へ PR。GET は tool にも併載されるため、失敗しても機能は残る(graceful degradation) |
+| 3 | **【検証済み 2026-07-05】** mcp/sdk v0.6.0 のテンプレートマッチャは RFC 6570 form-style `{?id}` を**解釈できない**(`compileTemplate()` が `{\w+}` のみ分割し、`{?id}` はリテラルとして preg_quote される。実測: `app://self/todo{?id}` は `app://self/todo?id=42` にマッチせず、リテラル URI `app://self/todo{?id}` にマッチする) | 中 | 代替シームも検証済み: `Registry` は final だが `Builder::setRegistry(RegistryInterface)` で差し替え可能、`ResourceTemplateReference::matches()/extractVariables()` は非 final。**v0.2 でデコレータ Registry + form-style 対応 Reference サブクラス**を実装し、上流へ PR 提案。GET は tool にも併載されるため機能は残る(graceful degradation) |
 | 4 | 長命プロセスの状態(既定 `Resource` クライアントは可変状態) | 中 | stdio(逐次)は問題なし。HTTP worker は `McpHttpModule` が stateless クライアントへ再束縛 |
 | 5 | mcp/sdk pre-1.0 BC break | 中 | `^0.6` ピン + `Sdk\` 隔離 + ゴールデンワイヤテスト + dev 追従 CI |
 | 6 | stdout 汚染 = プロトコル破壊 | 中 | ブート時 stderr 迂回 + per-call ob ガード + E2E 回帰テスト |

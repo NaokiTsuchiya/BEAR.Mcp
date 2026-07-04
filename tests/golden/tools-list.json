@@ -1,0 +1,184 @@
+[
+    {
+        "name": "multi_get",
+        "inputSchema": {
+            "type": "object"
+        },
+        "annotations": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "multi_post",
+        "inputSchema": {
+            "type": "object"
+        },
+        "annotations": {
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "idempotentHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "search_get",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "q": {
+                    "type": [
+                        "integer",
+                        "string"
+                    ]
+                },
+                "limit": {
+                    "type": "integer",
+                    "default": 10
+                }
+            },
+            "required": [
+                "q"
+            ]
+        },
+        "annotations": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "todo_archive",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Todo ID"
+                }
+            },
+            "required": [
+                "id"
+            ]
+        },
+        "description": "Archive a todo (soft delete)",
+        "annotations": {
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "todo_get",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "Todo ID (from validation schema)",
+                    "minimum": 1
+                }
+            },
+            "required": [
+                "id"
+            ],
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "additionalProperties": false
+        },
+        "description": "Get a todo by ID",
+        "annotations": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+        },
+        "outputSchema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "done": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "id",
+                "title",
+                "done"
+            ]
+        }
+    },
+    {
+        "name": "todo_post",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Todo title"
+                },
+                "done": {
+                    "type": "boolean",
+                    "description": "Completion state",
+                    "default": false
+                }
+            },
+            "required": [
+                "title"
+            ]
+        },
+        "description": "Create a new todo",
+        "annotations": {
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "idempotentHint": false,
+            "openWorldHint": false
+        }
+    },
+    {
+        "name": "user_get",
+        "title": "User",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "description": "User ID",
+                    "default": 1
+                }
+            }
+        },
+        "description": "Get a user by ID",
+        "annotations": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+        },
+        "outputSchema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "id",
+                "name"
+            ]
+        }
+    }
+]

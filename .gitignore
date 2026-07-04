@@ -1,0 +1,5 @@
+/vendor/
+/composer.lock
+/var/
+/tests/Fake/fake-app/var/tmp/
+/tests/Fake/fake-app/var/log/

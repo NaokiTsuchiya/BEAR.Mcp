@@ -1,0 +1,44 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Serve a BEAR.Sunday application over MCP stdio
+ *
+ * Usage: bear-mcp <AppName> [context] [appDir]
+ *   e.g. bear-mcp 'MyVendor\MyApp' prod-app /path/to/app
+ */
+
+use BEAR\Mcp\Sdk\Transport\McpBootstrap;
+
+$autoload = null;
+foreach ([
+    __DIR__ . '/../../../autoload.php', // installed under vendor/bear/mcp/bin
+    __DIR__ . '/../vendor/autoload.php', // repository checkout
+] as $file) {
+    if (file_exists($file)) {
+        $autoload = $file;
+        break;
+    }
+}
+
+if ($autoload === null) {
+    fwrite(STDERR, "bear-mcp: composer autoload.php not found\n");
+    exit(1);
+}
+
+require $autoload;
+
+$appName = $argv[1] ?? null;
+if ($appName === null) {
+    fwrite(STDERR, "Usage: bear-mcp <AppName> [context] [appDir]\n");
+    exit(1);
+}
+
+$context = $argv[2] ?? 'prod-app';
+// realpath first: dirname() is textual, and the vendor-installed autoload path
+// contains '..' segments that would resolve to vendor/bear instead of the app root
+$appDir = $argv[3] ?? dirname((string) realpath($autoload), 2);
+
+exit((new McpBootstrap())($appName, $context, $appDir));
