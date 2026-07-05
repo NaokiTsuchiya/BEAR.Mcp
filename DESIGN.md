@@ -4,6 +4,8 @@
 
 作成: 2026-07-05。マルチエージェント調査(BEAR.ToolUse ソース読解 / BEAR.Sunday 内部機構 / MCP PHP SDK 実地調査 / MCP 仕様・他フレームワーク先行事例)+ 3 案独立設計 + 3 視点審査の統合結果。
 
+> **注**: 本文書の `bear/mcp` / `BEAR\Mcp` は bearsunday org 移管後の最終形。現在の実装は org 移管まで `naokitsuchiya/bear-mcp` / `NaokiTsuchiya\BEAR\Mcp` を使用する(`BEAR\` ルート名前空間と Packagist の bear ベンダーを僭称しないため)。
+
 ---
 
 ## 0. 結論: アダプタでもルータでもなく「第三のプロトコルバインディング」

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Map;
+namespace NaokiTsuchiya\BEAR\Mcp\Map;
 
 /**
  * Immutable publication map: which resource methods are exposed to MCP

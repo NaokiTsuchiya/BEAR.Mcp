@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Module;
+namespace NaokiTsuchiya\BEAR\Mcp\Module;
 
-use BEAR\Mcp\Map\AnnotationDeriver;
-use BEAR\Mcp\Map\AttributeMcpMapFactory;
-use BEAR\Mcp\Map\McpMapFactoryInterface;
-use BEAR\Mcp\Schema\InputSchemaFactory;
-use BEAR\Mcp\Sdk\ServerFactory;
-use BEAR\Mcp\Server\McpConfig;
+use NaokiTsuchiya\BEAR\Mcp\Map\AnnotationDeriver;
+use NaokiTsuchiya\BEAR\Mcp\Map\AttributeMcpMapFactory;
+use NaokiTsuchiya\BEAR\Mcp\Map\McpMapFactoryInterface;
+use NaokiTsuchiya\BEAR\Mcp\Schema\InputSchemaFactory;
+use NaokiTsuchiya\BEAR\Mcp\Sdk\ServerFactory;
+use NaokiTsuchiya\BEAR\Mcp\Server\McpConfig;
 use Ray\Di\AbstractModule;
 use Ray\Di\Scope;
 

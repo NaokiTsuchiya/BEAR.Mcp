@@ -11,7 +11,7 @@ BEAR.Mcp is not a router and not an adapter — it is a third protocol binding a
 Mark the resource methods you want to expose. Nothing is published without an attribute (default-closed):
 
 ```php
-use BEAR\Mcp\Attribute\Mcp;
+use NaokiTsuchiya\BEAR\Mcp\Attribute\Mcp;
 use BEAR\Resource\Annotation\JsonSchema;
 
 class Todo extends ResourceObject
@@ -39,8 +39,8 @@ class Todo extends ResourceObject
 Install the module:
 
 ```php
-use BEAR\Mcp\Module\McpModule;
-use BEAR\Mcp\Server\McpConfig;
+use NaokiTsuchiya\BEAR\Mcp\Module\McpModule;
+use NaokiTsuchiya\BEAR\Mcp\Server\McpConfig;
 
 $this->install(new McpModule(new McpConfig(
     name: 'my-app',

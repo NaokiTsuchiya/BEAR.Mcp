@@ -1,5 +1,5 @@
 {
-    "name": "bear/mcp",
+    "name": "naokitsuchiya/bear-mcp",
     "description": "Serve a BEAR.Sunday application as an MCP server",
     "license": "MIT",
     "authors": [
@@ -28,12 +28,12 @@
     ],
     "autoload": {
         "psr-4": {
-            "BEAR\\Mcp\\": "src/"
+            "NaokiTsuchiya\\BEAR\\Mcp\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "BEAR\\Mcp\\": "tests/",
+            "NaokiTsuchiya\\BEAR\\Mcp\\": "tests/",
             "FakeVendor\\FakeProject\\": "tests/Fake/fake-app/src/",
             "FakeVendor\\InvalidProject\\": "tests/Fake/invalid-app/src/",
             "FakeVendor\\DupProject\\": "tests/Fake/dup-app/src/"

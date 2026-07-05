@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Map;
+namespace NaokiTsuchiya\BEAR\Mcp\Map;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

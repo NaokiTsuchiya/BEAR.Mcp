@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Sdk;
+namespace NaokiTsuchiya\BEAR\Mcp\Sdk;
 
-use BEAR\Mcp\Map\AnnotationDeriver;
-use BEAR\Mcp\Map\ToolDescriptor;
-use BEAR\Mcp\Sdk\Handler\ResourceToolHandler;
-use BEAR\Mcp\Sdk\Handler\StructuredCallToolResult;
+use NaokiTsuchiya\BEAR\Mcp\Map\AnnotationDeriver;
+use NaokiTsuchiya\BEAR\Mcp\Map\ToolDescriptor;
+use NaokiTsuchiya\BEAR\Mcp\Sdk\Handler\ResourceToolHandler;
+use NaokiTsuchiya\BEAR\Mcp\Sdk\Handler\StructuredCallToolResult;
 use BEAR\Resource\ResourceInterface;
 use BEAR\Resource\ResourceObject;
 use Mcp\Schema\Content\TextContent;

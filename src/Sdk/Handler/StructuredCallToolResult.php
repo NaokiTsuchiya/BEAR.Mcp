@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Sdk\Handler;
+namespace NaokiTsuchiya\BEAR\Mcp\Sdk\Handler;
 
 use Mcp\Schema\Result\CallToolResult;
 use stdClass;

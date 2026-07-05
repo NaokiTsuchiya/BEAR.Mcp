@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace FakeVendor\FakeProject\Module;
 
-use BEAR\Mcp\Module\McpModule;
-use BEAR\Mcp\Server\McpConfig;
+use NaokiTsuchiya\BEAR\Mcp\Module\McpModule;
+use NaokiTsuchiya\BEAR\Mcp\Server\McpConfig;
 use BEAR\Package\AbstractAppModule;
 use BEAR\Package\PackageModule;
 use BEAR\Resource\Module\JsonSchemaModule;

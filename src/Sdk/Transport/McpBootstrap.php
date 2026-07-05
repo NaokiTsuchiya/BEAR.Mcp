@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Sdk\Transport;
+namespace NaokiTsuchiya\BEAR\Mcp\Sdk\Transport;
 
-use BEAR\Mcp\Sdk\ServerFactory;
+use NaokiTsuchiya\BEAR\Mcp\Sdk\ServerFactory;
 use BEAR\Package\Injector;
 use Mcp\Server\Transport\StdioTransport;
 

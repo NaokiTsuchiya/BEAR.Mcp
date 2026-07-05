@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Exception;
+namespace NaokiTsuchiya\BEAR\Mcp\Exception;
 
 use LogicException;
 

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Map;
+namespace NaokiTsuchiya\BEAR\Mcp\Map;
 
 use BEAR\AppMeta\Meta;
-use BEAR\Mcp\Exception\DuplicateToolNameException;
-use BEAR\Mcp\Exception\InvalidExposureException;
-use BEAR\Mcp\Schema\InputSchemaFactory;
+use NaokiTsuchiya\BEAR\Mcp\Exception\DuplicateToolNameException;
+use NaokiTsuchiya\BEAR\Mcp\Exception\InvalidExposureException;
+use NaokiTsuchiya\BEAR\Mcp\Schema\InputSchemaFactory;
 use BEAR\Resource\OptionsMethods;
 use PHPUnit\Framework\TestCase;
 

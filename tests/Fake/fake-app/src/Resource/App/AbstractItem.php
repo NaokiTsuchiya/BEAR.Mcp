@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace FakeVendor\FakeProject\Resource\App;
 
-use BEAR\Mcp\Attribute\Mcp;
+use NaokiTsuchiya\BEAR\Mcp\Attribute\Mcp;
 use BEAR\Resource\ResourceObject;
 
 /**

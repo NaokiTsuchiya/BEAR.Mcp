@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Sdk;
+namespace NaokiTsuchiya\BEAR\Mcp\Sdk;
 
-use BEAR\Mcp\Map\McpMapFactoryInterface;
-use BEAR\Mcp\Map\ToolDescriptor;
-use BEAR\Mcp\Sdk\Handler\InitializeHandler;
-use BEAR\Mcp\Sdk\Handler\ResourceToolHandler;
-use BEAR\Mcp\Server\McpConfig;
+use NaokiTsuchiya\BEAR\Mcp\Map\McpMapFactoryInterface;
+use NaokiTsuchiya\BEAR\Mcp\Map\ToolDescriptor;
+use NaokiTsuchiya\BEAR\Mcp\Sdk\Handler\InitializeHandler;
+use NaokiTsuchiya\BEAR\Mcp\Sdk\Handler\ResourceToolHandler;
+use NaokiTsuchiya\BEAR\Mcp\Server\McpConfig;
 use BEAR\Resource\ResourceInterface;
 use Mcp\Schema\Implementation;
 use Mcp\Schema\ServerCapabilities;

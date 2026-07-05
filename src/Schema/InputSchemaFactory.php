@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Schema;
+namespace NaokiTsuchiya\BEAR\Mcp\Schema;
 
 use BEAR\Resource\Annotation\JsonSchema;
 use BEAR\Resource\OptionsMethods;

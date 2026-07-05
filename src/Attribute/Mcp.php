@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Attribute;
+namespace NaokiTsuchiya\BEAR\Mcp\Attribute;
 
 use Attribute;
 

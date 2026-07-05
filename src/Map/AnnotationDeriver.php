@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Map;
+namespace NaokiTsuchiya\BEAR\Mcp\Map;
 
 /**
  * Derive tool safety annotations from the HTTP verb (RFC 9110 semantics)

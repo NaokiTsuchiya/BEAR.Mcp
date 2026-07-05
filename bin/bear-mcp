@@ -10,7 +10,7 @@ declare(strict_types=1);
  *   e.g. bear-mcp 'MyVendor\MyApp' prod-app /path/to/app
  */
 
-use BEAR\Mcp\Sdk\Transport\McpBootstrap;
+use NaokiTsuchiya\BEAR\Mcp\Sdk\Transport\McpBootstrap;
 
 // Guard stdout before anything else loads: even a deprecation notice emitted
 // during autoloading would corrupt the JSON-RPC stream (McpBootstrap installs

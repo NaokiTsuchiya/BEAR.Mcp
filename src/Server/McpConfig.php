@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Server;
+namespace NaokiTsuchiya\BEAR\Mcp\Server;
 
 /**
  * MCP server identity and instructions

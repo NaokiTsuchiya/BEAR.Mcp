@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Sdk\Handler;
+namespace NaokiTsuchiya\BEAR\Mcp\Sdk\Handler;
 
-use BEAR\Mcp\Map\ToolDescriptor;
+use NaokiTsuchiya\BEAR\Mcp\Map\ToolDescriptor;
 use BEAR\Resource\Exception\BadRequestException;
 use BEAR\Resource\ResourceInterface;
 use Mcp\Schema\Content\TextContent;

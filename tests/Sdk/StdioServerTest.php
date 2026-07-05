@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Sdk;
+namespace NaokiTsuchiya\BEAR\Mcp\Sdk;
 
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

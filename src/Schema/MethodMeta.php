@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Schema;
+namespace NaokiTsuchiya\BEAR\Mcp\Schema;
 
 /**
  * Self-description of one resource method, extracted from OPTIONS metadata

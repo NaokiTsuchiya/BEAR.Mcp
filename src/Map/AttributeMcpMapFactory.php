@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Map;
+namespace NaokiTsuchiya\BEAR\Mcp\Map;
 
 use BEAR\AppMeta\AbstractAppMeta;
-use BEAR\Mcp\Attribute\Expose;
-use BEAR\Mcp\Attribute\Mcp;
-use BEAR\Mcp\Attribute\McpExclude;
-use BEAR\Mcp\Exception\DuplicateToolNameException;
-use BEAR\Mcp\Exception\InvalidExposureException;
-use BEAR\Mcp\Schema\InputSchemaFactory;
+use NaokiTsuchiya\BEAR\Mcp\Attribute\Expose;
+use NaokiTsuchiya\BEAR\Mcp\Attribute\Mcp;
+use NaokiTsuchiya\BEAR\Mcp\Attribute\McpExclude;
+use NaokiTsuchiya\BEAR\Mcp\Exception\DuplicateToolNameException;
+use NaokiTsuchiya\BEAR\Mcp\Exception\InvalidExposureException;
+use NaokiTsuchiya\BEAR\Mcp\Schema\InputSchemaFactory;
 use ReflectionClass;
 use ReflectionMethod;
 

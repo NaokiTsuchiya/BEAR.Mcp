@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace BEAR\Mcp\Map;
+namespace NaokiTsuchiya\BEAR\Mcp\Map;
 
 /**
  * RFC 9110 risk vocabulary derived from the HTTP verb, expressed as MCP tool annotations
