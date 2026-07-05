@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FakeVendor\FakeProject\Module;
 
+use NaokiTsuchiya\BEAR\Mcp\Module\McpHttpModule;
 use NaokiTsuchiya\BEAR\Mcp\Module\McpModule;
 use NaokiTsuchiya\BEAR\Mcp\Server\McpConfig;
 use BEAR\Package\AbstractAppModule;
@@ -19,6 +20,7 @@ class AppModule extends AbstractAppModule
             version: '1.0.0',
             instructions: 'Fake BEAR.Sunday app for BEAR.Mcp tests.',
         )));
+        $this->install(new McpHttpModule());
         $this->install(new JsonSchemaModule(
             $this->appMeta->appDir . '/var/json_schema',
             $this->appMeta->appDir . '/var/json_validate',

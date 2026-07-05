@@ -11,10 +11,12 @@
     "require": {
         "php": "^8.2",
         "ext-json": "*",
-        "mcp/sdk": "^0.6",
-        "bear/resource": "^1.21",
         "bear/app-meta": "^1.0",
         "bear/package": "^1.13",
+        "bear/resource": "^1.21",
+        "mcp/sdk": "^0.6",
+        "nyholm/psr7": "^1.8",
+        "nyholm/psr7-server": "^1.1",
         "ray/di": "^2.18"
     },
     "require-dev": {

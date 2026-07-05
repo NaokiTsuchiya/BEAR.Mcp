@@ -15,6 +15,7 @@ use Mcp\Schema\ServerCapabilities;
 use Mcp\Schema\Tool;
 use Mcp\Schema\ToolAnnotations;
 use Mcp\Server;
+use Mcp\Server\Session\SessionStoreInterface;
 
 /**
  * The single assembly point: build an MCP server from the publication map
@@ -24,10 +25,16 @@ use Mcp\Server;
  */
 final class ServerFactory
 {
+    /**
+     * $sessionStore stays null for stdio (the SDK's in-memory default fits a
+     * single-client process); McpHttpModule binds a persistent store so
+     * sessions survive across HTTP requests
+     */
     public function __construct(
         private readonly McpConfig $config,
         private readonly McpMapFactoryInterface $mapFactory,
         private readonly ResourceInterface $resource,
+        private readonly SessionStoreInterface|null $sessionStore = null,
     ) {
     }
 
@@ -48,6 +55,10 @@ final class ServerFactory
             ));
         if ($this->config->instructions !== null) {
             $builder->setInstructions($this->config->instructions);
+        }
+
+        if ($this->sessionStore !== null) {
+            $builder->setSession($this->sessionStore);
         }
 
         foreach (($this->mapFactory)()->tools as $descriptor) {

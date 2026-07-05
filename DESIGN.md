@@ -366,8 +366,8 @@ class Todo extends ResourceObject
 
 ## 8. ロードマップ
 
-1. **スパイク(着手前)**: リスク#3 — mcp/sdk の RFC 6570 form-style マッチング検証。
-2. **v0.1**: `#[Mcp]` + `McpMap` + `InputSchemaFactory` + stdio(`vendor/bin/bear-mcp`)+ tools のみ。ゴールデンテスト + E2E。*最小で動くものを最初に出す。*
-3. **v0.2**: resources / resource templates(GET 二重投影)+ completion + `resource_link`(`#[Link]`)+ `Interop\ToolUseBridge`。
-4. **v0.3**: Streamable HTTP(PSR-15 + `Psr16SessionStore` + `McpHttpModule`)+ mcp-map コンパイル。
-5. **v1.0**: bearsunday org への移管提案 + OptionsMethods 収斂の上流 RFC。
+1. ~~**スパイク(着手前)**: リスク#3 — mcp/sdk の RFC 6570 form-style マッチング検証。~~ **完了(2026-07-05)**: form-style 非対応を実証、代替シーム確認済み(リスク表#3)。
+2. ~~**v0.1**: `#[Mcp]` + `McpMap` + `InputSchemaFactory` + stdio(`vendor/bin/bear-mcp`)+ tools のみ。ゴールデンテスト + E2E。~~ **完了(2026-07-05)**: 実装済み + 敵対的レビュー15件反映。
+3. ~~**Streamable HTTP**(PSR-15 `McpRequestHandler` + FPM 用 `McpHttpEndpoint` + `FileSessionStore` + `McpHttpModule`)~~ **完了(2026-07-06)**: セッションは var/tmp 配下のファイル既定(`SessionStoreInterface` 再束縛で Redis 等に差し替え可)。認証は前段の責務として明記。
+4. **次**: resources / resource templates(GET 二重投影、form-style 対応の自前 Registry デコレータ)+ completion + `resource_link`(`#[Link]`)+ `Interop\ToolUseBridge`。
+5. その後: mcp-map コンパイル、bearsunday org への移管提案 + OptionsMethods 収斂の上流 RFC。

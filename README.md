@@ -4,7 +4,7 @@ Serve a [BEAR.Sunday](https://bearsunday.github.io/) application as an [MCP](htt
 
 BEAR.Mcp is not a router and not an adapter — it is a third protocol binding alongside HTTP and CLI. Resource methods you mark with `#[Mcp]` are published as MCP tools, with their names, descriptions, input schemas, and risk annotations derived from what the resource already declares: HTTP verb semantics, phpdoc, `#[JsonSchema]` files, and OPTIONS metadata.
 
-**Status: v0.1 (experimental).** Tools over stdio. Resources / resource templates, `resource_link`, and Streamable HTTP are planned — see [DESIGN.md](DESIGN.md).
+**Status: v0.2 (experimental).** Tools over stdio and Streamable HTTP. Resources / resource templates and `resource_link` are planned — see [DESIGN.md](DESIGN.md).
 
 ## Usage
 
@@ -61,6 +61,43 @@ Register with an MCP client (e.g. `claude_desktop_config.json`) — no files to 
     }
 }
 ```
+
+## Streamable HTTP
+
+Install the HTTP module alongside `McpModule`:
+
+```php
+$this->install(new McpHttpModule(
+    allowedHosts: ['mcp.example.com'],   // omit for localhost-only (secure default)
+));
+```
+
+On plain PHP-FPM, drop a public endpoint script:
+
+```php
+// public/mcp.php
+use NaokiTsuchiya\BEAR\Mcp\Sdk\Transport\McpHttpEndpoint;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+(new McpHttpEndpoint())('MyVendor\MyApp', 'prod-app', dirname(__DIR__));
+```
+
+On a PSR-15 stack (FrankenPHP worker, RoadRunner, middleware pipelines), mount
+`McpRequestHandler` directly — it is a standard `RequestHandlerInterface`.
+
+Sessions are file-backed under `var/tmp/{context}/mcp-sessions` (created
+owner-only: file names are live session ids) and requests on the same session
+are serialized with a per-session lock — the SDK's session handling is a
+whole-blob read-modify-write, so parallel requests on one session would race
+otherwise. The lock serializes per host: multi-host deployments need sticky
+sessions, and can rebind the SDK's `SessionStoreInterface` (e.g.
+`Psr16SessionStore` on Redis) for shared session state. CORS, DNS-rebinding
+protection, and protocol-version validation come from the SDK's default
+middleware.
+
+**Authentication is not included**: this binding targets a trusted boundary.
+Put a Bearer/OAuth middleware or gateway in front of the endpoint before
+exposing it beyond localhost.
 
 ## What is derived for you
 
