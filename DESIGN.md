@@ -207,7 +207,7 @@ final class ResourceToolHandler implements ToolHandlerInterface // Mcp\Server\Ha
 
 `McpBootstrap`(bin の実体)の仕事:
 
-1. **stdout 規律の確保**(spec MUST): `ini_set('display_errors', 'stderr')` + 出力バッファガード。PHP は notice 1 発でプロトコルが壊れるためパッケージ側で防護。
+1. **stdout 規律の確保**(spec MUST): 出力バッファガードのみで防護。echo / notice / warning / fatal の表示出力はすべて出力バッファリングを通るため、ガードが stderr へ迂回できる(実測検証済み 2026-07-05)。`ini_set('display_errors', ...)` は**行わない** — display_errors はアプリ/運用のエラーポリシー(php.ini の管轄)で、バインディングの責務は自チャネル(stdout)の保護のみ。ガードは bin で autoload の前にも張り、autoload 中の deprecation も捕捉する。
 2. `BEAR\Package\Injector::getInstance($appName, $context, $appDir)`(prod はコンパイル済みインジェクタ復元)→ `ServerFactory` → `McpMap` から Runtime Handler 全登録 → `StdioTransport::run()`。
 3. セッションストアは InMemory。
 

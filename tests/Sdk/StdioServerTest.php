@@ -10,7 +10,6 @@ use RuntimeException;
 use function array_filter;
 use function array_map;
 use function dirname;
-use function explode;
 use function fclose;
 use function feof;
 use function fgets;
@@ -18,11 +17,11 @@ use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function fwrite;
-use function is_array;
 use function is_dir;
 use function is_resource;
 use function json_decode;
 use function json_encode;
+use function microtime;
 use function mkdir;
 use function proc_close;
 use function proc_open;
@@ -68,7 +67,17 @@ final class StdioServerTest extends TestCase
         self::removeDir(self::fakeAppDir() . '/var/tmp'); // no stale DI cache
 
         $process = proc_open(
-            [PHP_BINARY, dirname(__DIR__, 2) . '/bin/bear-mcp', 'FakeVendor\FakeProject', 'app', self::fakeAppDir()],
+            [
+                PHP_BINARY,
+                // worst case for stdout discipline, regardless of the machine's php.ini:
+                // displayed errors would go straight to stdout without the guard
+                '-d', 'display_errors=1',
+                '-d', 'error_reporting=E_ALL',
+                dirname(__DIR__, 2) . '/bin/bear-mcp',
+                'FakeVendor\FakeProject',
+                'app',
+                self::fakeAppDir(),
+            ],
             [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
             $pipes,
         );
@@ -145,9 +154,10 @@ final class StdioServerTest extends TestCase
             json_decode($line, true, 512, JSON_THROW_ON_ERROR);
         }
 
-        // --- the echoed garbage was diverted to stderr, not stdout
+        // --- the echoed garbage and the displayed notice were diverted to stderr, not stdout
         $stderr = (string) stream_get_contents($this->pipes[2]);
         $this->assertStringContainsString('stdout-leak-test', $stderr);
+        $this->assertStringContainsString('notice-leak-test', $stderr);
     }
 
     /** @param array<string, mixed> $tools */
@@ -195,8 +205,8 @@ final class StdioServerTest extends TestCase
 
     private function readLine(int $timeoutSeconds = 30): string
     {
-        $deadline = \microtime(true) + $timeoutSeconds;
-        while (\microtime(true) < $deadline) {
+        $deadline = microtime(true) + $timeoutSeconds;
+        while (microtime(true) < $deadline) {
             $read = [$this->pipes[1]];
             $write = $except = [];
             if (stream_select($read, $write, $except, 0, 200_000) === false) {

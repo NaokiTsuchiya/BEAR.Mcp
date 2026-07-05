@@ -12,6 +12,17 @@ declare(strict_types=1);
 
 use BEAR\Mcp\Sdk\Transport\McpBootstrap;
 
+// Guard stdout before anything else loads: even a deprecation notice emitted
+// during autoloading would corrupt the JSON-RPC stream (McpBootstrap installs
+// the same guard for programmatic use; nesting is harmless)
+ob_start(static function (string $buffer): string {
+    if ($buffer !== '') {
+        fwrite(STDERR, $buffer);
+    }
+
+    return '';
+}, 1);
+
 $autoload = null;
 foreach ([
     __DIR__ . '/../../../autoload.php', // installed under vendor/bear/mcp/bin

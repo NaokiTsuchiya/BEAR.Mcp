@@ -47,6 +47,7 @@ class Todo extends ResourceObject
     public function onPost(string $title, bool $done = false): static
     {
         echo 'stdout-leak-test'; // exercises the per-call stdout guard
+        trigger_error('notice-leak-test', E_USER_NOTICE); // display_errors output must not reach stdout either
 
         $this->code = 201;
         $this->body = ['id' => 3, 'title' => $title, 'done' => $done];
