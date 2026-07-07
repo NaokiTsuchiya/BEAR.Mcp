@@ -1,0 +1,24 @@
+# Early warning against mcp/sdk pre-1.0 BC breaks: run our suite against
+# the SDK's dev-main weekly, so upstream changes (e.g. the stateless-protocol
+# overhaul) surface here before they reach a tagged release.
+name: mcp/sdk dev-main watch
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  sdk-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - run: composer require mcp/sdk:dev-main --no-interaction --with-all-dependencies
+
+      - run: vendor/bin/phpunit

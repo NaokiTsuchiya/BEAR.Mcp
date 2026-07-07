@@ -1,5 +1,7 @@
 # BEAR.Mcp
 
+[![CI](https://github.com/NaokiTsuchiya/BEAR.Mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/NaokiTsuchiya/BEAR.Mcp/actions/workflows/ci.yml)
+
 Serve a [BEAR.Sunday](https://bearsunday.github.io/) application as an [MCP](https://modelcontextprotocol.io/) server.
 
 BEAR.Mcp is not a router and not an adapter — it is a third protocol binding alongside HTTP and CLI. Resource methods you mark with `#[Mcp]` are published as MCP tools, with their names, descriptions, input schemas, and risk annotations derived from what the resource already declares: HTTP verb semantics, phpdoc, `#[JsonSchema]` files, and OPTIONS metadata.
