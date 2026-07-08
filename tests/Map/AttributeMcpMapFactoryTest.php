@@ -8,6 +8,7 @@ use BEAR\AppMeta\Meta;
 use NaokiTsuchiya\BEAR\Mcp\Exception\DuplicateToolNameException;
 use NaokiTsuchiya\BEAR\Mcp\Exception\InvalidExposureException;
 use NaokiTsuchiya\BEAR\Mcp\Schema\InputSchemaFactory;
+use NaokiTsuchiya\BEAR\Mcp\Schema\UriTemplateFactory;
 use BEAR\Resource\OptionsMethods;
 use PHPUnit\Framework\TestCase;
 
@@ -25,7 +26,13 @@ final class AttributeMcpMapFactoryTest extends TestCase
                 $appDir . '/var/json_validate',
             ),
             new AnnotationDeriver(),
+            new UriTemplateFactory(),
         );
+    }
+
+    private function projectionAppMap(): McpMap
+    {
+        return $this->factory('FakeVendor\ProjectionProject', dirname(__DIR__) . '/Fake/projection-app')();
     }
 
     private function fakeAppMap(): McpMap
@@ -137,11 +144,127 @@ final class AttributeMcpMapFactoryTest extends TestCase
         $this->assertSame(['q'], $schema['required']);
     }
 
+    public function testFakeAppGetMethodsProjectAsResourcesAndTemplates(): void
+    {
+        $map = $this->fakeAppMap();
+
+        // Every exposed GET projects twice under Expose::Auto; only Multi::onGet
+        // is argument-less, so it is the sole plain resource
+        $this->assertSame(
+            ['app://self/multi'],
+            array_map(static fn (ResourceDescriptor $r): string => $r->uri, $map->resources),
+        );
+        $this->assertSame(
+            ['app://self/search{?q,limit}', 'app://self/todo{?id}', 'app://self/user{?id}'],
+            array_map(static fn (TemplateDescriptor $t): string => $t->uriTemplate, $map->templates),
+        );
+    }
+
+    private function template(McpMap $map, string $uriTemplate): TemplateDescriptor
+    {
+        foreach ($map->templates as $template) {
+            if ($template->uriTemplate === $uriTemplate) {
+                return $template;
+            }
+        }
+
+        $this->fail('No such template in map: ' . $uriTemplate);
+    }
+
+    public function testTemplateDerivation(): void
+    {
+        $todo = $this->template($this->fakeAppMap(), 'app://self/todo{?id}');
+
+        $this->assertSame('todo', $todo->name, 'verb-less path form: the URI is the identity');
+        $this->assertSame(['id'], $todo->variables);
+        $this->assertSame('Get a todo by ID', $todo->description);
+        $this->assertSame('application/json', $todo->mimeType);
+        $this->assertSame([], $todo->completions, 'todo.get.json declares no enum');
+    }
+
+    public function testResourceDerivation(): void
+    {
+        $multi = $this->fakeAppMap()->resources[0];
+
+        $this->assertSame('app://self/multi', $multi->uri);
+        $this->assertSame('multi', $multi->name);
+        $this->assertSame('application/json', $multi->mimeType);
+    }
+
+    public function testExposeResourceSuppressesTheTool(): void
+    {
+        $map = $this->projectionAppMap();
+
+        $names = array_map(static fn (ToolDescriptor $t): string => $t->name, $map->tools);
+        $this->assertSame(
+            ['detail_get', 'doc_get', 'feed_get', 'session_get', 'status_get', 'wiki_get'],
+            $names,
+            'no config_get: Expose::Resource',
+        );
+
+        $this->assertCount(1, $map->resources);
+        $config = $map->resources[0];
+        $this->assertSame('app://self/config', $config->uri);
+        $this->assertSame('Config', $config->title);
+        $this->assertSame('Application configuration', $config->description, 'phpdoc summary');
+        $this->assertSame('text/plain', $config->mimeType, '#[Mcp(mimeType:)]');
+    }
+
+    public function testExposeToolSuppressesTheResourceProjection(): void
+    {
+        $templates = array_map(
+            static fn (TemplateDescriptor $t): string => $t->uriTemplate,
+            $this->projectionAppMap()->templates,
+        );
+
+        $this->assertSame(
+            ['app://self/detail{?id}', 'app://self/doc{?format}', 'app://self/session{?id}', 'app://self/wiki{?slug}'],
+            $templates,
+            'no status template (method-level Expose::Tool), no feed template (class-level Expose::Tool)',
+        );
+    }
+
+    public function testClassLevelExposeAppliesAndMethodLevelOverridesIt(): void
+    {
+        $map = $this->projectionAppMap();
+
+        $templates = array_map(static fn (TemplateDescriptor $t): string => $t->uriTemplate, $map->templates);
+        $this->assertNotContains('app://self/feed{?page}', $templates, 'class-level as: Expose::Tool is inherited');
+        $this->assertContains(
+            'app://self/wiki{?slug}',
+            $templates,
+            'method-level as: Expose::Both overrides the class-level Expose::Tool',
+        );
+    }
+
+    public function testEnumBecomesCompletionCandidates(): void
+    {
+        $doc = $this->template($this->projectionAppMap(), 'app://self/doc{?format}');
+
+        $this->assertSame(['format' => ['html', 'pdf', 'text']], $doc->completions);
+    }
+
+    public function testWebContextParameterIsExcludedFromTemplateVariables(): void
+    {
+        $session = $this->template($this->projectionAppMap(), 'app://self/session{?id}');
+
+        $this->assertSame(['id'], $session->variables, 'the #[CookieParam] parameter is not a caller argument');
+    }
+
     public function testExposeResourceOnNonGetFailsFast(): void
     {
         $this->expectException(InvalidExposureException::class);
+        $this->expectExceptionMessage('Expose::Resource is GET-only');
 
         $this->factory('FakeVendor\InvalidProject', dirname(__DIR__) . '/Fake/invalid-app')();
+    }
+
+    public function testExposeBothOnNonGetFailsFast(): void
+    {
+        $this->expectException(InvalidExposureException::class);
+        $this->expectExceptionMessage('Expose::Both is GET-only');
+
+        $this->factory('FakeVendor\InvalidBothProject', dirname(__DIR__) . '/Fake/invalid-both-app')();
     }
 
     public function testDuplicateToolNamesFailFast(): void
