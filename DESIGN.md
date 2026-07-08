@@ -369,5 +369,6 @@ class Todo extends ResourceObject
 1. ~~**スパイク(着手前)**: リスク#3 — mcp/sdk の RFC 6570 form-style マッチング検証。~~ **完了(2026-07-05)**: form-style 非対応を実証、代替シーム確認済み(リスク表#3)。
 2. ~~**v0.1**: `#[Mcp]` + `McpMap` + `InputSchemaFactory` + stdio(`vendor/bin/bear-mcp`)+ tools のみ。ゴールデンテスト + E2E。~~ **完了(2026-07-05)**: 実装済み + 敵対的レビュー15件反映。
 3. ~~**Streamable HTTP**(PSR-15 `McpRequestHandler` + FPM 用 `McpHttpEndpoint` + `FileSessionStore` + `McpHttpModule`)~~ **完了(2026-07-06)**: セッションは var/tmp 配下のファイル既定(`SessionStoreInterface` 再束縛で Redis 等に差し替え可)。認証は前段の責務として明記。
-4. **次**: resources / resource templates(GET 二重投影、form-style 対応の自前 Registry デコレータ)+ completion + `resource_link`(`#[Link]`)+ `Interop\ToolUseBridge`。
-5. その後: mcp-map コンパイル、bearsunday org への移管提案 + OptionsMethods 収斂の上流 RFC。
+4. ~~**v0.3 前半(SDK 非依存層)**: resources / resource templates の Map 層(GET 二重投影、`ResourceDescriptor` / `TemplateDescriptor`、`UriTemplateFactory` の form-style `{?a,b}` 展開)+ enum → completion 候補 + `LinkResolver`(`#[Link]` を `uri_template()` で解決 → `{rel, uri}` 中立データ)+ `Interop\ToolUseBridge`(実 verb ペアリング、nullable 正規化、confirm → destructiveHint)。~~ **完了(2026-07-08)**: 実装済み + 多レンズ敵対的レビュー反映。ツール名重複検出は `McpMap` コンストラクタ不変条件に昇格(ブリッジ合流時も起動時失敗)。
+5. **次(v0.3 後半)— SDK ワイヤ接続**: mcp/sdk のステートレス大改修(2026-07-28 マイルストーン)後に、form-style 対応の自前 Registry デコレータ + resources/read・completion/complete ハンドラ + tool 結果への `resource_link` 添付 + `ServerFactory` への resources/templates 登録。
+6. その後: mcp-map コンパイル、bearsunday org への移管提案 + OptionsMethods 収斂の上流 RFC。
