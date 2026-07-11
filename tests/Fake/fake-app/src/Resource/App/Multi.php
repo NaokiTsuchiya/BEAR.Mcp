@@ -13,6 +13,8 @@ class Multi extends ResourceObject
 {
     public function onGet(): static
     {
+        echo 'stdout-leak-test'; // exercises the per-call stdout guard on the resources/read path
+
         $this->body = ['multi' => 'get'];
 
         return $this;
