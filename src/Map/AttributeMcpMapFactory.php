@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NaokiTsuchiya\BEAR\Mcp\Map;
 
 use BEAR\AppMeta\AbstractAppMeta;
+use BEAR\Resource\Annotation\Link;
 use NaokiTsuchiya\BEAR\Mcp\Attribute\Expose;
 use NaokiTsuchiya\BEAR\Mcp\Attribute\Mcp;
 use NaokiTsuchiya\BEAR\Mcp\Attribute\McpExclude;
@@ -12,9 +13,11 @@ use NaokiTsuchiya\BEAR\Mcp\Exception\InvalidExposureException;
 use NaokiTsuchiya\BEAR\Mcp\Schema\InputSchemaFactory;
 use NaokiTsuchiya\BEAR\Mcp\Schema\MethodMeta;
 use NaokiTsuchiya\BEAR\Mcp\Schema\UriTemplateFactory;
+use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionMethod;
 
+use function array_map;
 use function in_array;
 use function is_array;
 use function parse_url;
@@ -100,7 +103,7 @@ final class AttributeMcpMapFactory implements McpMapFactoryInterface
                 $meta = ($this->inputSchemaFactory)($resMeta->class, $verb);
 
                 if ($expose !== Expose::Resource) {
-                    $tools[] = $this->newToolDescriptor($resMeta->uriPath, $verb, $methodAttr, $classAttr, $meta);
+                    $tools[] = $this->newToolDescriptor($resMeta->uriPath, $verb, $method, $methodAttr, $classAttr, $meta);
                 }
 
                 if ($verb === 'get' && $expose !== Expose::Tool) {
@@ -135,6 +138,7 @@ final class AttributeMcpMapFactory implements McpMapFactoryInterface
     private function newToolDescriptor(
         string $uri,
         string $verb,
+        ReflectionMethod $method,
         Mcp|null $methodAttr,
         Mcp|null $classAttr,
         MethodMeta $meta,
@@ -155,6 +159,10 @@ final class AttributeMcpMapFactory implements McpMapFactoryInterface
                 $methodAttr?->openWorld ?? $classAttr?->openWorld,
             ),
             outputSchema: $meta->outputSchema,
+            links: array_map(
+                static fn (ReflectionAttribute $attribute): Link => $attribute->newInstance(),
+                $method->getAttributes(Link::class),
+            ),
         );
     }
 
@@ -186,6 +194,7 @@ final class AttributeMcpMapFactory implements McpMapFactoryInterface
     ): TemplateDescriptor {
         return new TemplateDescriptor(
             uriTemplate: $uriTemplate,
+            uri: $uri,
             name: $this->derivePath($uri),
             title: $methodAttr?->title ?? $classAttr?->title,
             description: $methodAttr?->description ?? $classAttr?->description ?? $meta->summary,

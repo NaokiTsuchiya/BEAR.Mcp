@@ -6,6 +6,7 @@ namespace NaokiTsuchiya\BEAR\Mcp\Module;
 
 use NaokiTsuchiya\BEAR\Mcp\Map\AnnotationDeriver;
 use NaokiTsuchiya\BEAR\Mcp\Map\AttributeMcpMapFactory;
+use NaokiTsuchiya\BEAR\Mcp\Map\LinkResolver;
 use NaokiTsuchiya\BEAR\Mcp\Map\McpMapFactoryInterface;
 use NaokiTsuchiya\BEAR\Mcp\Schema\InputSchemaFactory;
 use NaokiTsuchiya\BEAR\Mcp\Schema\UriTemplateFactory;
@@ -35,6 +36,7 @@ final class McpModule extends AbstractModule
         $this->bind(McpConfig::class)->toInstance($this->config);
         $this->bind(McpMapFactoryInterface::class)->to(AttributeMcpMapFactory::class)->in(Scope::SINGLETON);
         $this->bind(AnnotationDeriver::class)->in(Scope::SINGLETON);
+        $this->bind(LinkResolver::class)->in(Scope::SINGLETON);
         $this->bind(InputSchemaFactory::class)->in(Scope::SINGLETON);
         $this->bind(UriTemplateFactory::class)->in(Scope::SINGLETON);
         $this->bind(ServerFactory::class)->in(Scope::SINGLETON);
