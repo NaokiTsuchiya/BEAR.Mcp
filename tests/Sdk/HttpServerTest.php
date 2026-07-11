@@ -61,7 +61,7 @@ final class HttpServerTest extends TestCase
         $init = $this->decode($response);
         $this->assertSame('fake-app', $init['result']['serverInfo']['name']);
         $this->assertSame('2025-06-18', $init['result']['protocolVersion']);
-        $this->assertSame(['tools' => []], $init['result']['capabilities']);
+        $this->assertSame(['completions' => [], 'resources' => [], 'tools' => []], $init['result']['capabilities']);
 
         $this->post(['jsonrpc' => '2.0', 'method' => 'notifications/initialized'], $sessionId);
 
@@ -69,7 +69,7 @@ final class HttpServerTest extends TestCase
         $list = $this->decode($this->post(['jsonrpc' => '2.0', 'id' => 2, 'method' => 'tools/list', 'params' => []], $sessionId));
         $names = array_map(static fn (array $t): string => $t['name'], $list['result']['tools']);
         $this->assertSame(
-            ['multi_get', 'multi_post', 'search_get', 'todo_archive', 'todo_get', 'todo_post', 'user_get'],
+            ['format_get', 'multi_get', 'multi_post', 'search_get', 'todo_archive', 'todo_get', 'todo_post', 'user_get'],
             $names,
         );
 
@@ -82,6 +82,18 @@ final class HttpServerTest extends TestCase
         ], $sessionId));
         $body = json_decode($get['result']['content'][0]['text'], true);
         $this->assertSame(['id' => 1, 'title' => 'Write tests', 'done' => false], $body);
+
+        // --- resources/read reaches the same wiring as the stdio binding
+        $read = $this->decode($this->post([
+            'jsonrpc' => '2.0',
+            'id' => 10,
+            'method' => 'resources/read',
+            'params' => ['uri' => 'app://self/todo?id=1'],
+        ], $sessionId));
+        $this->assertSame(
+            ['id' => 1, 'title' => 'Write tests', 'done' => false],
+            json_decode($read['result']['contents'][0]['text'], true),
+        );
 
         // --- the session survives a brand-new handler + server (new FPM process)
         $freshInjector = Injector::getInstance('FakeVendor\FakeProject', 'app', dirname(__DIR__) . '/Fake/fake-app');

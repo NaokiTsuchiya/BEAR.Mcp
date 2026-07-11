@@ -40,7 +40,14 @@ final class McpMapTest extends TestCase
         $map = new McpMap(
             [$this->tool('todo_get', 'app://self/todo', 'get')],
             [new ResourceDescriptor('app://self/config', 'config', null, null)],
-            [new TemplateDescriptor('app://self/todo{?id}', 'todo', null, null, ['id'])],
+            [new TemplateDescriptor(
+                uriTemplate: 'app://self/todo{?id}',
+                uri: 'app://self/todo',
+                name: 'todo',
+                title: null,
+                description: null,
+                variables: ['id'],
+            )],
         );
 
         $this->assertCount(1, $map->tools);

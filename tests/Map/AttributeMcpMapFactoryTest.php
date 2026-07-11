@@ -61,7 +61,7 @@ final class AttributeMcpMapFactoryTest extends TestCase
         // - item_get (Item inherits AbstractItem's #[Mcp] onGet but carries no attribute
         //   itself — exposure never propagates through inheritance)
         $this->assertSame(
-            ['multi_get', 'multi_post', 'search_get', 'todo_archive', 'todo_get', 'todo_post', 'user_get'],
+            ['format_get', 'multi_get', 'multi_post', 'search_get', 'todo_archive', 'todo_get', 'todo_post', 'user_get'],
             $names,
         );
     }
@@ -77,6 +77,19 @@ final class AttributeMcpMapFactoryTest extends TestCase
         $this->assertFalse($todoGet->safety->destructive);
         $this->assertTrue($todoGet->safety->idempotent);
         $this->assertNotNull($todoGet->outputSchema, '#[JsonSchema(schema:)] with object root');
+    }
+
+    public function testGetToolCollectsLinkAttributes(): void
+    {
+        $todoGet = $this->tool('todo_get');
+
+        $this->assertCount(2, $todoGet->links);
+        $this->assertSame('archive', $todoGet->links[0]->rel);
+        $this->assertSame('/todo{?id}', $todoGet->links[0]->href);
+        $this->assertSame('delete', $todoGet->links[0]->method);
+        $this->assertSame('archive', $todoGet->links[1]->rel);
+        $this->assertSame('app://self/todo/archive?id={id}', $todoGet->links[1]->href);
+        $this->assertSame('get', $todoGet->links[1]->method);
     }
 
     public function testParamsFileWinsOverReflection(): void
@@ -155,7 +168,13 @@ final class AttributeMcpMapFactoryTest extends TestCase
             array_map(static fn (ResourceDescriptor $r): string => $r->uri, $map->resources),
         );
         $this->assertSame(
-            ['app://self/search{?q,limit}', 'app://self/todo{?id}', 'app://self/user{?id}'],
+            [
+                'app://self/format{?format}',
+                'app://self/search{?q,limit}',
+                'app://self/todo/archive{?id}',
+                'app://self/todo{?id}',
+                'app://self/user{?id}',
+            ],
             array_map(static fn (TemplateDescriptor $t): string => $t->uriTemplate, $map->templates),
         );
     }
@@ -175,6 +194,7 @@ final class AttributeMcpMapFactoryTest extends TestCase
     {
         $todo = $this->template($this->fakeAppMap(), 'app://self/todo{?id}');
 
+        $this->assertSame('app://self/todo', $todo->uri, 'plain BEAR uri, distinct from the expanded uriTemplate');
         $this->assertSame('todo', $todo->name, 'verb-less path form: the URI is the identity');
         $this->assertSame(['id'], $todo->variables);
         $this->assertSame('Get a todo by ID', $todo->description);
