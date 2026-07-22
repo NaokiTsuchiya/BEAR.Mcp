@@ -117,6 +117,27 @@ final class HttpServerTest extends TestCase
         $this->assertSame(404, $afterDelete->getStatusCode(), 'terminated session id is gone');
     }
 
+    public function testStdoutLeakDuringDispatchIsDivertedNotIntoTheHttpResponse(): void
+    {
+        // Unlike stdio (guarded once for the whole process by McpBootstrap), this
+        // transport has no other output-buffer guard anywhere — McpRequestHandler
+        // itself must divert a stray echo, or it would corrupt the response body
+        $this->expectOutputString('');
+
+        $response = $this->post($this->initializeMessage(), sessionId: null);
+        $sessionId = $response->getHeaderLine('Mcp-Session-Id');
+        $this->post(['jsonrpc' => '2.0', 'method' => 'notifications/initialized'], $sessionId);
+
+        // Multi::onGet has a deliberate echo (see tests/Fake/fake-app), reused here
+        $read = $this->decode($this->post([
+            'jsonrpc' => '2.0',
+            'id' => 21,
+            'method' => 'resources/read',
+            'params' => ['uri' => 'app://self/multi'],
+        ], $sessionId));
+        $this->assertSame(['multi' => 'get'], json_decode($read['result']['contents'][0]['text'], true));
+    }
+
     public function testDnsRebindingProtectionRejectsForeignHost(): void
     {
         $request = $this->postRequest($this->initializeMessage(), null)

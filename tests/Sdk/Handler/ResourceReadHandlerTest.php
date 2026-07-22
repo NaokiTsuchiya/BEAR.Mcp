@@ -44,18 +44,25 @@ final class ResourceReadHandlerTest extends TestCase
 
     public function testSuccessReturnsEncodedBody(): void
     {
-        $handler = new ResourceReadHandler($this->resource, $this->descriptor('app://self/multi', 'multi'));
+        // Not Multi (its onGet has a deliberate echo used by StdioServerTest/
+        // HttpServerTest/StdoutGuardTest to exercise the transport-level guard —
+        // irrelevant here and would otherwise leak into this test's own output,
+        // since a handler invoked directly, bypassing both transports, has no
+        // guard around it by design)
+        $ro = new class extends ResourceObject {
+            public function onGet(): static
+            {
+                return $this;
+            }
+        };
+        $ro->code = 200;
+        $ro->body = ['multi' => 'get'];
 
-        $result = $handler->read('app://self/multi', $this->gateway());
+        $resource = $this->createStub(ResourceInterface::class);
+        $resource->method('get')->willReturn($ro);
 
-        $this->assertSame(['multi' => 'get'], json_decode($result, true));
-    }
+        $handler = new ResourceReadHandler($resource, $this->descriptor('app://self/multi', 'multi'));
 
-    public function testStdoutLeakIsDivertedToStderrNotIntoTheReturnedContent(): void
-    {
-        $this->expectOutputString('');
-
-        $handler = new ResourceReadHandler($this->resource, $this->descriptor('app://self/multi', 'multi'));
         $result = $handler->read('app://self/multi', $this->gateway());
 
         $this->assertSame(['multi' => 'get'], json_decode($result, true));

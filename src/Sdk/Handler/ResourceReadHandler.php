@@ -13,18 +13,13 @@ use Mcp\Server\ClientGateway;
 use Mcp\Server\Handler\ResourceHandlerInterface;
 use Throwable;
 
-use function fwrite;
-use function is_string;
 use function json_encode;
-use function ob_get_clean;
-use function ob_start;
 use function sprintf;
 
 use const JSON_INVALID_UTF8_SUBSTITUTE;
 use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
-use const STDERR;
 
 /**
  * Dispatch a resources/read onto the BEAR resource client for a plain (argument-less) resource
@@ -38,21 +33,6 @@ final class ResourceReadHandler implements ResourceHandlerInterface
     }
 
     public function read(string $uri, ClientGateway $gateway): mixed
-    {
-        // Per-call stdout guard: any echo/notice inside the resource would corrupt
-        // the stdio protocol, so leaked output is diverted to stderr
-        ob_start();
-        try {
-            return $this->call($uri);
-        } finally {
-            $leaked = ob_get_clean();
-            if (is_string($leaked) && $leaked !== '') {
-                fwrite(STDERR, $leaked);
-            }
-        }
-    }
-
-    private function call(string $uri): string
     {
         try {
             $ro = $this->resource->get($this->descriptor->uri);

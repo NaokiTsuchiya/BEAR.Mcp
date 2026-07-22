@@ -59,6 +59,7 @@ final class McpRequestHandler implements RequestHandlerInterface
         private readonly AbstractAppMeta $appMeta,
         #[Named('mcp_allowed_hosts')]
         private readonly array|null $allowedHosts = null,
+        private readonly StdoutGuard $guard = new StdoutGuard(),
     ) {
     }
 
@@ -83,10 +84,15 @@ final class McpRequestHandler implements RequestHandlerInterface
 
         $lock = $sessionId === '' ? null : $this->acquireSessionLock($sessionId);
         try {
-            $response = $this->server->run(new StreamableHttpTransport($request, middleware: $middleware));
-            assert($response instanceof ResponseInterface);
+            // No process-wide guard exists for this transport (unlike stdio's
+            // McpBootstrap) — a stray echo/notice from a dispatched BEAR resource
+            // would otherwise land straight in the HTTP response body
+            return ($this->guard)(function () use ($request, $middleware): ResponseInterface {
+                $response = $this->server->run(new StreamableHttpTransport($request, middleware: $middleware));
+                assert($response instanceof ResponseInterface);
 
-            return $response;
+                return $response;
+            });
         } finally {
             if ($lock !== null) {
                 flock($lock, LOCK_UN);
