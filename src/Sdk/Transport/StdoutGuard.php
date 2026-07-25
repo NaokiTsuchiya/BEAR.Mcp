@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NaokiTsuchiya\BEAR\Mcp\Sdk\Transport;
 
-use function error_log;
 use function fopen;
 use function fwrite;
 use function is_string;
@@ -25,7 +24,7 @@ use function ob_start;
  * Opens its sink via php://stderr rather than the STDERR constant, which is
  * defined only under the CLI SAPI — McpRequestHandler wraps requests under
  * PHP-FPM too, where the constant doesn't exist. If the stream can't be
- * opened, leaked output falls back to error_log() rather than fataling. The
+ * opened, leaked output is dropped rather than fataling the request. The
  * handle is safe to reuse for the process's lifetime (worker mode) or to
  * open fresh per request (PHP-FPM); either way PHP closes it automatically.
  */
@@ -44,14 +43,8 @@ final class StdoutGuard
     public function __invoke(callable $fn): mixed
     {
         ob_start(function (string $buffer): string {
-            if ($buffer === '') {
-                return '';
-            }
-
-            if ($this->stream !== null) {
+            if ($buffer !== '' && $this->stream !== null) {
                 fwrite($this->stream, $buffer);
-            } else {
-                error_log($buffer);
             }
 
             return '';
