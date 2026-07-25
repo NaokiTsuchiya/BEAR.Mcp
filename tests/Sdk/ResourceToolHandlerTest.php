@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace NaokiTsuchiya\BEAR\Mcp\Sdk;
 
 use NaokiTsuchiya\BEAR\Mcp\Map\AnnotationDeriver;
+use NaokiTsuchiya\BEAR\Mcp\Map\LinkResolver;
 use NaokiTsuchiya\BEAR\Mcp\Map\ToolDescriptor;
+use NaokiTsuchiya\BEAR\Mcp\Sdk\Content\ResourceLinkContent;
 use NaokiTsuchiya\BEAR\Mcp\Sdk\Handler\ResourceToolHandler;
 use NaokiTsuchiya\BEAR\Mcp\Sdk\Handler\StructuredCallToolResult;
+use BEAR\Resource\Annotation\Link;
 use BEAR\Resource\ResourceInterface;
 use BEAR\Resource\ResourceObject;
 use Mcp\Schema\Content\TextContent;
@@ -25,8 +28,13 @@ use const INF;
 
 final class ResourceToolHandlerTest extends TestCase
 {
-    private function handler(mixed $body, int $code = 200, array|null $outputSchema = null): ResourceToolHandler
-    {
+    /** @param list<Link> $links */
+    private function handler(
+        mixed $body,
+        int $code = 200,
+        array|null $outputSchema = null,
+        array $links = [],
+    ): ResourceToolHandler {
         $ro = new class extends ResourceObject {
             public function onGet(): static
             {
@@ -48,7 +56,8 @@ final class ResourceToolHandlerTest extends TestCase
             inputSchema: ['type' => 'object'],
             safety: (new AnnotationDeriver())('get'),
             outputSchema: $outputSchema,
-        ));
+            links: $links,
+        ), new LinkResolver());
     }
 
     private function gateway(): ClientGateway
@@ -106,5 +115,22 @@ final class ResourceToolHandlerTest extends TestCase
         $content = $result->content[0];
         assert($content instanceof TextContent);
         $this->assertStringStartsWith('404:', $content->text);
+    }
+
+    public function testResourceLinkIsAppendedWhenOutputSchemaIsNull(): void
+    {
+        $result = $this->handler(
+            ['id' => 1],
+            links: [new Link(rel: 'archive', href: 'app://self/fake/archive?id={id}', method: 'get', title: 'Archive')],
+        )->execute([], $this->gateway());
+
+        $this->assertFalse($result->isError);
+        $this->assertCount(2, $result->content);
+        $link = $result->content[1];
+        assert($link instanceof ResourceLinkContent);
+        $this->assertSame('resource_link', $link->type);
+        $this->assertSame('app://self/fake/archive?id=1', $link->uri);
+        $this->assertSame('archive', $link->name);
+        $this->assertSame('Archive', $link->title);
     }
 }

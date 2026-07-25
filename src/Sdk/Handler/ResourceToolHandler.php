@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace NaokiTsuchiya\BEAR\Mcp\Sdk\Handler;
 
+use NaokiTsuchiya\BEAR\Mcp\Map\LinkResolver;
 use NaokiTsuchiya\BEAR\Mcp\Map\ToolDescriptor;
+use NaokiTsuchiya\BEAR\Mcp\Sdk\Content\ResourceLinkContent;
 use BEAR\Resource\Exception\BadRequestException;
 use BEAR\Resource\ResourceInterface;
 use Mcp\Schema\Content\TextContent;
@@ -14,20 +16,15 @@ use Mcp\Server\Handler\ToolHandlerInterface;
 use Throwable;
 
 use function array_is_list;
-use function fwrite;
 use function get_debug_type;
 use function is_array;
-use function is_string;
 use function json_encode;
-use function ob_get_clean;
-use function ob_start;
 use function sprintf;
 
 use const JSON_INVALID_UTF8_SUBSTITUTE;
 use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
-use const STDERR;
 
 /**
  * Dispatch a tools/call onto the BEAR resource client
@@ -41,26 +38,12 @@ final class ResourceToolHandler implements ToolHandlerInterface
     public function __construct(
         private readonly ResourceInterface $resource,
         private readonly ToolDescriptor $tool,
+        private readonly LinkResolver $linkResolver,
     ) {
     }
 
-    public function execute(array $arguments, ClientGateway $gateway): CallToolResult
-    {
-        // Per-call stdout guard: any echo/notice inside the resource would corrupt
-        // the stdio protocol, so leaked output is diverted to stderr
-        ob_start();
-        try {
-            return $this->call($arguments);
-        } finally {
-            $leaked = ob_get_clean();
-            if (is_string($leaked) && $leaked !== '') {
-                fwrite(STDERR, $leaked);
-            }
-        }
-    }
-
     /** @param array<string, mixed> $arguments */
-    private function call(array $arguments): CallToolResult
+    public function execute(array $arguments, ClientGateway $gateway): CallToolResult
     {
         try {
             $ro = match ($this->tool->verb) {
@@ -85,8 +68,15 @@ final class ResourceToolHandler implements ToolHandlerInterface
 
     private function success(mixed $body): CallToolResult
     {
+        $resolvedLinks = ($this->linkResolver)($this->tool->links, $body);
+
         if ($this->tool->outputSchema === null) {
-            return new CallToolResult(content: [new TextContent($this->encode($body))]);
+            $content = [new TextContent($this->encode($body))];
+            foreach ($resolvedLinks as $link) {
+                $content[] = new ResourceLinkContent(uri: $link->uri, name: $link->rel, title: $link->title);
+            }
+
+            return new CallToolResult(content: $content);
         }
 
         // Spec MUST: a tool declaring outputSchema provides conforming structuredContent
@@ -97,8 +87,13 @@ final class ResourceToolHandler implements ToolHandlerInterface
             ));
         }
 
+        $content = [new TextContent($body === [] ? '{}' : $this->encode($body))];
+        foreach ($resolvedLinks as $link) {
+            $content[] = new ResourceLinkContent(uri: $link->uri, name: $link->rel, title: $link->title);
+        }
+
         return new StructuredCallToolResult(
-            content: [new TextContent($body === [] ? '{}' : $this->encode($body))],
+            content: $content,
             structuredContent: $body,
         );
     }

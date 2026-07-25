@@ -6,6 +6,7 @@ namespace FakeVendor\FakeProject\Resource\App;
 
 use NaokiTsuchiya\BEAR\Mcp\Attribute\Mcp;
 use BEAR\Resource\Annotation\JsonSchema;
+use BEAR\Resource\Annotation\Link;
 use BEAR\Resource\ResourceObject;
 
 class Todo extends ResourceObject
@@ -23,6 +24,8 @@ class Todo extends ResourceObject
      */
     #[Mcp]
     #[JsonSchema(schema: 'todo.json', params: 'todo.get.json')]
+    #[Link(rel: 'archive', href: '/todo{?id}', method: 'delete', title: 'Archive this todo')]
+    #[Link(rel: 'archive', href: 'app://self/todo/archive?id={id}', method: 'get', title: 'View archived todo')]
     public function onGet(int $id): static
     {
         if (! isset(self::TODOS[$id])) {

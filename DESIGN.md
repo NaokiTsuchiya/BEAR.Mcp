@@ -68,7 +68,7 @@ BEAR の `on{Verb}` 命名は RFC 9110 の safe/idempotent 意味論をメソッ
 | OPTIONS メタデータ(`OptionsMethods`) | tool `description` + `inputSchema` | 自動 |
 | `#[JsonSchema(params:)]` | `inputSchema`(ファイル内容を最優先マージ) | 自動 |
 | `#[JsonSchema(schema:)]` | `outputSchema` + `structuredContent` | root が object の場合のみ |
-| `#[Link]` / HAL `_links` | tool 結果の **`resource_link`** content block | 自動(v0.2) |
+| `#[Link]` / HAL `_links` | tool 結果の **`resource_link`** content block | 自動(v0.3) |
 | ALPS semantic descriptor | パラメータ description 補強 + completion 候補 | optional(ToolUse 連携) |
 | `$ro->code >= 400` / `BadRequestException` | `isError: true` + 自己修正可能なメッセージ | tools/call |
 | `ResourceNotFoundException` | JSON-RPC `-32002`(resources/read)/ `isError`(tools/call) | |
@@ -175,7 +175,7 @@ final class ResourceToolHandler implements ToolHandlerInterface // Mcp\Server\Ha
 
 - エラー 2 系統は spec に忠実: 業務・バリデーションエラーは `isError: true`(protocol error にしない)、resources/read の不在のみ `-32002`。
 - レンダラは経由せず `$ro->body` を直接使う(BEAR.Cli の `--format=json` と同じ理由)。
-- 各 tools/call を `ob_start`/`ob_end_clean` で包み、ハンドラ内の echo/notice の stdout 漏れを呼び出し粒度でも防ぐ(ブート時ガードの補完)。
+- stdout/出力層の保護は `ResourceToolHandler` 等の個々のハンドラの関心事にしない。`Sdk\Transport\StdoutGuard` として**トランスポート境界に一本化**(2026-07-12 決定)——stdio は `McpBootstrap` がプロセス生涯に1回、Streamable HTTP は `McpRequestHandler::handle()` がリクエストごとに1回。ハンドラ側に重複ガードを持たせると、HTTP 側に同等の保護が無いという事実を覆い隠してしまう。
 
 ---
 
@@ -351,10 +351,10 @@ class Todo extends ResourceObject
 |---|---|---|---|
 | 1 | **HTTP トランスポートの認証**(mcp/sdk の OAuth 2.1 RS 対応は未完) | 高 | v1 は stdio 第一級。HTTP は「信頼境界内(前段 PSR-15 ミドルウェアで Bearer 検証)」と明記。OAuth は SDK 追従で v2 |
 | 2 | **単一プリンシパル問題**(tools はアプリ権限で実行、「誰として」がない。Ray.Di にセッションスコープなし) | 高 | v1 のターゲットを「開発者の stdio」「サービスアカウント的 HTTP」と明示。per-request 可視性フックは v2 検討 |
-| 3 | **【検証済み 2026-07-05】** mcp/sdk v0.6.0 のテンプレートマッチャは RFC 6570 form-style `{?id}` を**解釈できない**(`compileTemplate()` が `{\w+}` のみ分割し、`{?id}` はリテラルとして preg_quote される。実測: `app://self/todo{?id}` は `app://self/todo?id=42` にマッチせず、リテラル URI `app://self/todo{?id}` にマッチする) | 中 | 代替シームも検証済み: `Registry` は final だが `Builder::setRegistry(RegistryInterface)` で差し替え可能、`ResourceTemplateReference::matches()/extractVariables()` は非 final。**v0.2 でデコレータ Registry + form-style 対応 Reference サブクラス**を実装し、上流へ PR 提案。GET は tool にも併載されるため機能は残る(graceful degradation) |
+| 3 | **【検証済み 2026-07-05、解決済み 2026-07-12】** mcp/sdk v0.6.0 のテンプレートマッチャは RFC 6570 form-style `{?id}` を**解釈できない**(`compileTemplate()` が `{\w+}` のみ分割し、`{?id}` はリテラルとして preg_quote される。実測: `app://self/todo{?id}` は `app://self/todo?id=42` にマッチせず、リテラル URI `app://self/todo{?id}` にマッチする) | 中 | 代替シームどおり実装済み: `Registry` は final だが `Builder::setRegistry(RegistryInterface)` で差し替え可能、`ResourceTemplateReference::matches()/extractVariables()` は非 final。`Sdk\Registry\FormStyleRegistry` + `FormStyleTemplateReference` を実装(base+query-key 部分集合マッチ、bare-base は全変数省略として一致、`completion/complete` が渡すリテラル `uriTemplate` 文字列は matches() より先に自前マップの完全一致で処理)。上流 PR 提案は今後の課題として残る |
 | 4 | 長命プロセスの状態(既定 `Resource` クライアントは可変状態) | 中 | stdio(逐次)は問題なし。HTTP worker は `McpHttpModule` が stateless クライアントへ再束縛 |
 | 5 | mcp/sdk pre-1.0 BC break | 中 | `^0.6` ピン + `Sdk\` 隔離 + ゴールデンワイヤテスト + dev 追従 CI |
-| 6 | stdout 汚染 = プロトコル破壊 | 中 | ブート時 stderr 迂回 + per-call ob ガード + E2E 回帰テスト |
+| 6 | stdout 汚染 = プロトコル破壊 | 中 | `Sdk\Transport\StdoutGuard` をトランスポート境界に一本化(stdio: `McpBootstrap` がプロセス生涯に1回、HTTP: `McpRequestHandler::handle()` がリクエストごとに1回)+ E2E 回帰テスト |
 | 7 | ストリーミング/進捗(BEAR のリソース呼び出しは同期、SDK も standalone SSE 未実装) | 低 | progress / subscribe / listChanged を**宣言しない**(静的マップに listChanged は不要が正しい姿勢) |
 | 8 | 巨大 tool 結果による LLM 文脈破壊 | 低 | `limit` パラメータ推奨をドキュメント化。ToolUse の filter 概念の輸入は v2 |
 | 9 | `json_validate_dir` 未束縛アプリでの unbound(OptionsMethods の要求) | 低 | `McpModule` がデフォルト `''` を束縛 |
@@ -370,5 +370,5 @@ class Todo extends ResourceObject
 2. ~~**v0.1**: `#[Mcp]` + `McpMap` + `InputSchemaFactory` + stdio(`vendor/bin/bear-mcp`)+ tools のみ。ゴールデンテスト + E2E。~~ **完了(2026-07-05)**: 実装済み + 敵対的レビュー15件反映。
 3. ~~**Streamable HTTP**(PSR-15 `McpRequestHandler` + FPM 用 `McpHttpEndpoint` + `FileSessionStore` + `McpHttpModule`)~~ **完了(2026-07-06)**: セッションは var/tmp 配下のファイル既定(`SessionStoreInterface` 再束縛で Redis 等に差し替え可)。認証は前段の責務として明記。
 4. ~~**v0.3 前半(SDK 非依存層)**: resources / resource templates の Map 層(GET 二重投影、`ResourceDescriptor` / `TemplateDescriptor`、`UriTemplateFactory` の form-style `{?a,b}` 展開)+ enum → completion 候補 + `LinkResolver`(`#[Link]` を `uri_template()` で解決 → `{rel, uri}` 中立データ)+ `Interop\ToolUseBridge`(実 verb ペアリング、nullable 正規化、confirm → destructiveHint)。~~ **完了(2026-07-08)**: 実装済み + 多レンズ敵対的レビュー反映。ツール名重複検出は `McpMap` コンストラクタ不変条件に昇格(ブリッジ合流時も起動時失敗)。
-5. **次(v0.3 後半)— SDK ワイヤ接続**: mcp/sdk のステートレス大改修(2026-07-28 マイルストーン)後に、form-style 対応の自前 Registry デコレータ + resources/read・completion/complete ハンドラ + tool 結果への `resource_link` 添付 + `ServerFactory` への resources/templates 登録。
-6. その後: mcp-map コンパイル、bearsunday org への移管提案 + OptionsMethods 収斂の上流 RFC。
+5. ~~**v0.3 後半 — SDK ワイヤ接続**: form-style 対応の自前 Registry デコレータ + resources/read・completion/complete ハンドラ + tool 結果への `resource_link` 添付 + `ServerFactory` への resources/templates 登録。~~ **完了(2026-07-12)**: 当初は mcp/sdk のステートレス大改修(2026-07-28 マイルストーン)後に着手する計画だったが、着手前に上流(modelcontextprotocol/php-sdk)を調査した結果、その改修(トラッキング issue、全サブissue が 2026-07-12 時点で未着手・実装 PR ゼロ)が触る面(`Protocol.php` / `Session/*` / `StreamableHttpTransport.php` / `InitializeRequest.php`)と本作業が触る面(`Registry` / 明示登録 API / `ServerCapabilities`)が重ならないと判断し、待たずに着手した。`Sdk\Registry\FormStyleRegistry`(`Mcp\Capability\Registry` は final のためデコレータ、`RegistryInterface` の23メソッド全実装、テンプレート系5メソッドのみ自前マップで独立管理)+ `FormStyleTemplateReference`、`Sdk\Handler\ResourceReadHandler` / `TemplateReadHandler`(`ResourceToolHandler` と同じ stdout ガード + エラー写像パターン)、`Sdk\Content\ResourceLinkContent`(**mcp/sdk 本体に resource_link content クラスが存在しないため自前実装** — 上流への追加提案の種になる)を実装。`ServerFactory` の `ServerCapabilities` はマップの実内容(`tools`/`resources`/`templates` が空かどうか)から動的算出に変更。多レンズ敵対的レビュー(6観点)で5件確認・修正(`tools` capability の未条件化、E2E フィクスチャの resource_link 遷移先未登録、`outputSchema` なしツールでの resource_link 添付未検証、capabilities OR ロジックの検証不足、非404エラー写像の未検証)。テスト 66→98件、ゴールデン3種(`tools-list.json` 更新 + `resources-list.json`/`resources-templates-list.json` 新設)。
+6. その後: mcp/sdk のステートレス改修着地後に凍結領域(`FileSessionStoreProvider`、自前 `InitializeHandler`、`McpRequestHandler` のセッション処理)を削除、mcp-map コンパイル、bearsunday org への移管提案 + OptionsMethods 収斂の上流 RFC、`FormStyleRegistry`/`ResourceLinkContent` の上流 PR 提案。

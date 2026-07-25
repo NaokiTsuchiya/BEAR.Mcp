@@ -1,0 +1,31 @@
+[
+    {
+        "uriTemplate": "app://self/format{?format}",
+        "name": "format",
+        "description": "Render output in a given format",
+        "mimeType": "application/json"
+    },
+    {
+        "uriTemplate": "app://self/search{?q,limit}",
+        "name": "search",
+        "mimeType": "application/json"
+    },
+    {
+        "uriTemplate": "app://self/todo/archive{?id}",
+        "name": "todo_archive",
+        "mimeType": "application/json"
+    },
+    {
+        "uriTemplate": "app://self/todo{?id}",
+        "name": "todo",
+        "description": "Get a todo by ID",
+        "mimeType": "application/json"
+    },
+    {
+        "uriTemplate": "app://self/user{?id}",
+        "name": "user",
+        "title": "User",
+        "description": "Get a user by ID",
+        "mimeType": "application/json"
+    }
+]

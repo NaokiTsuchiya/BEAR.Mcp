@@ -113,19 +113,75 @@ final class StdioServerTest extends TestCase
         $this->assertSame('1.0.0', $init['result']['serverInfo']['version']);
         $this->assertSame('Fake BEAR.Sunday app for BEAR.Mcp tests.', $init['result']['instructions']);
         $this->assertSame('2025-06-18', $init['result']['protocolVersion'], 'spec MUST: echo the supported requested version');
-        $this->assertSame(['tools' => []], $init['result']['capabilities'], 'declare only what this server supports');
+        $this->assertSame(
+            ['completions' => [], 'resources' => [], 'tools' => []],
+            $init['result']['capabilities'],
+            'declare only what this server supports',
+        );
 
         $this->notify('notifications/initialized');
 
         // --- tools/list: golden wire-format comparison
         $list = $this->request(2, 'tools/list');
-        $this->assertGolden($list['result']['tools']);
+        $this->assertGolden('tools-list.json', $list['result']['tools']);
+
+        // --- resources/list: golden wire-format comparison
+        $resources = $this->request(9, 'resources/list');
+        $this->assertGolden('resources-list.json', $resources['result']['resources']);
+
+        // --- resources/templates/list: golden wire-format comparison
+        $templates = $this->request(10, 'resources/templates/list');
+        $this->assertGolden('resources-templates-list.json', $templates['result']['resourceTemplates']);
+
+        // --- resources/read: plain (argument-less) resource
+        $multiRead = $this->request(11, 'resources/read', ['uri' => 'app://self/multi']);
+        $this->assertSame('app://self/multi', $multiRead['result']['contents'][0]['uri']);
+        $this->assertSame('application/json', $multiRead['result']['contents'][0]['mimeType']);
+        $this->assertSame(['multi' => 'get'], json_decode($multiRead['result']['contents'][0]['text'], true));
+
+        // --- resources/read: not found maps to the spec's -32002
+        $notFoundRead = $this->request(12, 'resources/read', ['uri' => 'app://self/does-not-exist']);
+        $this->assertSame(-32002, $notFoundRead['error']['code']);
+
+        // --- resources/read: template with a real query string
+        $todoRead = $this->request(13, 'resources/read', ['uri' => 'app://self/todo?id=1']);
+        $this->assertSame(
+            ['id' => 1, 'title' => 'Write tests', 'done' => false],
+            json_decode($todoRead['result']['contents'][0]['text'], true),
+        );
+
+        // --- resources/read: bare-base template request uses the method's default parameter value
+        $userRead = $this->request(14, 'resources/read', ['uri' => 'app://self/user']);
+        $this->assertSame(
+            ['id' => 1, 'name' => 'Alice'],
+            json_decode($userRead['result']['contents'][0]['text'], true),
+            'onGet(int $id = 1): a bare-base match is a valid form-style expansion',
+        );
+
+        // --- completion/complete: enum-bearing template variable
+        $completion = $this->request(15, 'completion/complete', [
+            'ref' => ['type' => 'ref/resource', 'uri' => 'app://self/format{?format}'],
+            'argument' => ['name' => 'format', 'value' => ''],
+        ]);
+        $this->assertSame(['html', 'pdf', 'text'], $completion['result']['completion']['values']);
 
         // --- tools/call: success
         $get = $this->request(3, 'tools/call', ['name' => 'todo_get', 'arguments' => ['id' => 1]]);
         $this->assertFalse($get['result']['isError'] ?? false, 'no error flag on success');
         $body = json_decode($get['result']['content'][0]['text'], true);
         $this->assertSame(['id' => 1, 'title' => 'Write tests', 'done' => false], $body);
+
+        // --- tools/call: #[Link] resolves to a resource_link content block
+        $this->assertSame('resource_link', $get['result']['content'][1]['type']);
+        $this->assertSame('app://self/todo/archive?id=1', $get['result']['content'][1]['uri']);
+        $this->assertSame('archive', $get['result']['content'][1]['name']);
+
+        // --- the emitted resource_link is genuinely followable, not just wire shape
+        $archiveRead = $this->request(16, 'resources/read', ['uri' => $get['result']['content'][1]['uri']]);
+        $this->assertSame(
+            ['id' => 1, 'archived' => true],
+            json_decode($archiveRead['result']['contents'][0]['text'], true),
+        );
 
         // --- tools/call: business error becomes isError (self-correction), not a protocol error
         $notFound = $this->request(4, 'tools/call', ['name' => 'todo_get', 'arguments' => ['id' => 999]]);
@@ -160,11 +216,11 @@ final class StdioServerTest extends TestCase
         $this->assertStringContainsString('notice-leak-test', $stderr);
     }
 
-    /** @param array<string, mixed> $tools */
-    private function assertGolden(array $tools): void
+    /** @param array<string, mixed> $data */
+    private function assertGolden(string $goldenFileName, array $data): void
     {
-        $goldenFile = dirname(__DIR__) . '/golden/tools-list.json';
-        $actual = json_encode($tools, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+        $goldenFile = dirname(__DIR__) . '/golden/' . $goldenFileName;
+        $actual = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
         if (! file_exists($goldenFile)) {
             if (! is_dir(dirname($goldenFile))) {
                 mkdir(dirname($goldenFile), 0777, true);

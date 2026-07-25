@@ -1,5 +1,32 @@
 [
     {
+        "name": "format_get",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "format": {
+                    "type": "string",
+                    "enum": [
+                        "html",
+                        "pdf",
+                        "text"
+                    ],
+                    "description": "Output format (from validation schema)",
+                    "default": "html"
+                }
+            },
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "additionalProperties": false
+        },
+        "description": "Render output in a given format",
+        "annotations": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+        }
+    },
+    {
         "name": "multi_get",
         "inputSchema": {
             "type": "object"
