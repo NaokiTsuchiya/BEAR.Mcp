@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace NaokiTsuchiya\BEAR\Mcp\Sdk\Transport;
 
+use function error_log;
+use function fopen;
 use function fwrite;
+use function is_string;
 use function ob_end_flush;
 use function ob_start;
-
-use const STDERR;
 
 /**
  * Divert leaked output (echo, notice/warning/fatal display) to stderr
@@ -20,14 +21,37 @@ use const STDERR;
  * — a stray echo there would otherwise land straight in the HTTP response
  * body, since the SDK writes that body to an explicit PSR-7 stream rather
  * than through output buffering.
+ *
+ * Opens its sink via php://stderr rather than the STDERR constant, which is
+ * defined only under the CLI SAPI — McpRequestHandler wraps requests under
+ * PHP-FPM too, where the constant doesn't exist. If the stream can't be
+ * opened, leaked output falls back to error_log() rather than fataling. The
+ * handle is safe to reuse for the process's lifetime (worker mode) or to
+ * open fresh per request (PHP-FPM); either way PHP closes it automatically.
  */
 final class StdoutGuard
 {
+    /** @var resource|null */
+    private readonly mixed $stream;
+
+    /** @param string|resource $target A stream URI to open, or an already-open stream (for tests) */
+    public function __construct(mixed $target = 'php://stderr')
+    {
+        $handle = is_string($target) ? @fopen($target, 'wb') : $target;
+        $this->stream = $handle === false ? null : $handle;
+    }
+
     public function __invoke(callable $fn): mixed
     {
-        ob_start(static function (string $buffer): string {
-            if ($buffer !== '') {
-                fwrite(STDERR, $buffer);
+        ob_start(function (string $buffer): string {
+            if ($buffer === '') {
+                return '';
+            }
+
+            if ($this->stream !== null) {
+                fwrite($this->stream, $buffer);
+            } else {
+                error_log($buffer);
             }
 
             return '';
