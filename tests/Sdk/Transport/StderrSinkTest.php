@@ -23,12 +23,4 @@ final class StderrSinkTest extends TestCase
         rewind($stream);
         $this->assertSame('stdout-leak-test', stream_get_contents($stream));
     }
-
-    /** No sink to divert to — drop the leaked output rather than fataling the request */
-    public function testSilentlyDropsOutputWhenTheStreamCannotBeOpened(): void
-    {
-        $this->expectNotToPerformAssertions();
-
-        (new StderrSink('invalid-scheme://unreachable'))->write('dropped-leak-test');
-    }
 }

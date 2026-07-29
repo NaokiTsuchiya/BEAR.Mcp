@@ -23,7 +23,7 @@ use Mcp\Server\Transport\StdioTransport;
 final class McpBootstrap
 {
     public function __construct(
-        private readonly StdoutGuard $guard = new StdoutGuard(new StderrSink()),
+        private readonly OutputGuard $guard = new StdoutGuard(new StderrSink()),
     ) {
     }
 

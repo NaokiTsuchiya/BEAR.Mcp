@@ -18,7 +18,7 @@ use function ob_start;
  * body, since the SDK writes that body to an explicit PSR-7 stream rather
  * than through output buffering.
  */
-final class StdoutGuard
+final class StdoutGuard implements OutputGuard
 {
     public function __construct(private readonly OutputSink $sink)
     {
