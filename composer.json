@@ -23,6 +23,9 @@
         "bear/tool-use": "^0.3.0",
         "phpunit/phpunit": "^11.5 || ^12.0"
     },
+    "conflict": {
+        "psr/container": "<1.1"
+    },
     "suggest": {
         "bear/tool-use": "Reuse #[Tool] descriptions and ALPS-based parameter docs for MCP"
     },
