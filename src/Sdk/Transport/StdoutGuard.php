@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace NaokiTsuchiya\BEAR\Mcp\Sdk\Transport;
 
-use function fwrite;
 use function ob_end_flush;
 use function ob_start;
 
-use const STDERR;
-
 /**
- * Divert leaked output (echo, notice/warning/fatal display) to stderr
+ * Divert leaked output (echo, notice/warning/fatal display) to the given sink
  *
  * A transport-boundary concern, not a per-dispatch one: stdio needs exactly
  * one guard around the whole process (McpBootstrap installs it once, for
@@ -21,13 +18,17 @@ use const STDERR;
  * body, since the SDK writes that body to an explicit PSR-7 stream rather
  * than through output buffering.
  */
-final class StdoutGuard
+final class StdoutGuard implements OutputGuard
 {
+    public function __construct(private readonly OutputSink $sink)
+    {
+    }
+
     public function __invoke(callable $fn): mixed
     {
-        ob_start(static function (string $buffer): string {
+        ob_start(function (string $buffer): string {
             if ($buffer !== '') {
-                fwrite(STDERR, $buffer);
+                $this->sink->write($buffer);
             }
 
             return '';
