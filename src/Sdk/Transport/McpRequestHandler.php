@@ -59,7 +59,7 @@ final class McpRequestHandler implements RequestHandlerInterface
         private readonly AbstractAppMeta $appMeta,
         #[Named('mcp_allowed_hosts')]
         private readonly array|null $allowedHosts = null,
-        private readonly StdoutGuard $guard = new StdoutGuard(),
+        private readonly StdoutGuard $guard = new StdoutGuard(new StderrSink()),
     ) {
     }
 

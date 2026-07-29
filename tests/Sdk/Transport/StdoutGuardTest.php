@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace NaokiTsuchiya\BEAR\Mcp\Sdk\Transport;
 
+use NaokiTsuchiya\BEAR\Mcp\Fake\FakeOutputSink;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-
-use function fopen;
-use function rewind;
-use function stream_get_contents;
 
 final class StdoutGuardTest extends TestCase
 {
     public function testReturnValuePassesThrough(): void
     {
-        $result = (new StdoutGuard())(static fn (): string => 'value');
+        $result = (new StdoutGuard(new FakeOutputSink()))(static fn (): string => 'value');
 
         $this->assertSame('value', $result);
     }
@@ -24,9 +21,20 @@ final class StdoutGuardTest extends TestCase
     {
         $this->expectOutputString('');
 
-        (new StdoutGuard())(static function (): void {
+        (new StdoutGuard(new FakeOutputSink()))(static function (): void {
             echo 'leaked';
         });
+    }
+
+    public function testLeakedOutputIsDivertedToTheSink(): void
+    {
+        $sink = new FakeOutputSink();
+
+        (new StdoutGuard($sink))(static function (): void {
+            echo 'stdout-leak-test';
+        });
+
+        $this->assertSame(['stdout-leak-test'], $sink->written);
     }
 
     public function testExceptionsPropagateAfterTheGuardCloses(): void
@@ -34,44 +42,16 @@ final class StdoutGuardTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('boom');
 
-        (new StdoutGuard())(static function (): never {
+        (new StdoutGuard(new FakeOutputSink()))(static function (): never {
             throw new RuntimeException('boom');
         });
     }
 
     public function testGuardCanBeUsedAgainAfterClosing(): void
     {
-        $guard = new StdoutGuard();
+        $guard = new StdoutGuard(new FakeOutputSink());
 
         $this->assertSame('first', $guard(static fn (): string => 'first'));
         $this->assertSame('second', $guard(static fn (): string => 'second'));
-    }
-
-    /** Regression: the guard must divert via a php://stderr stream, not the CLI-only STDERR constant */
-    public function testLeakedOutputIsWrittenToTheStreamNotTheStderrConstant(): void
-    {
-        $sink = fopen('php://memory', 'w+');
-        $this->assertIsResource($sink);
-
-        (new StdoutGuard($sink))(static function (): void {
-            echo 'stdout-leak-test';
-        });
-
-        rewind($sink);
-        $this->assertSame('stdout-leak-test', stream_get_contents($sink));
-    }
-
-    /** No sink to divert to — drop the leaked output rather than fataling the request */
-    public function testSilentlyDropsLeakedOutputWhenTheStreamCannotBeOpened(): void
-    {
-        $this->expectOutputString('');
-
-        $result = (new StdoutGuard('invalid-scheme://unreachable'))(static function (): string {
-            echo 'dropped-leak-test';
-
-            return 'value';
-        });
-
-        $this->assertSame('value', $result);
     }
 }
