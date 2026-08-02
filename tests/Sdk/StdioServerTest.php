@@ -11,8 +11,6 @@ use function array_filter;
 use function array_map;
 use function dirname;
 use function fclose;
-use function feof;
-use function fgets;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
@@ -30,6 +28,8 @@ use function scandir;
 use function stream_get_contents;
 use function stream_select;
 use function stream_set_blocking;
+use function strpos;
+use function substr;
 use function trim;
 use function unlink;
 
@@ -56,6 +56,8 @@ final class StdioServerTest extends TestCase
 
     /** @var list<string> */
     private array $stdoutLines = [];
+
+    private string $stdoutBuffer = '';
 
     private static function fakeAppDir(): string
     {
@@ -99,7 +101,7 @@ final class StdioServerTest extends TestCase
             }
         }
 
-        proc_close($this->process);
+        $this->assertSame(0, proc_close($this->process), 'bear-mcp should exit cleanly after stdin closes');
     }
 
     public function testProtocolRoundTrip(): void
@@ -263,26 +265,32 @@ final class StdioServerTest extends TestCase
     {
         $deadline = microtime(true) + $timeoutSeconds;
         while (microtime(true) < $deadline) {
+            $newline = strpos($this->stdoutBuffer, "\n");
+            if ($newline !== false) {
+                $line = substr($this->stdoutBuffer, 0, $newline);
+                $this->stdoutBuffer = substr($this->stdoutBuffer, $newline + 1);
+                $line = trim($line);
+                if ($line === '') {
+                    continue;
+                }
+
+                $this->stdoutLines[] = $line;
+
+                return $line;
+            }
+
             $read = [$this->pipes[1]];
             $write = $except = [];
             if (stream_select($read, $write, $except, 0, 200_000) === false) {
                 break;
             }
 
-            while (! feof($this->pipes[1])) {
-                $line = fgets($this->pipes[1]);
-                if ($line === false) {
-                    break;
-                }
-
-                if (trim($line) === '') {
-                    continue;
-                }
-
-                $this->stdoutLines[] = trim($line);
-
-                return trim($line);
+            $chunk = stream_get_contents($this->pipes[1]);
+            if ($chunk === false || $chunk === '') {
+                continue;
             }
+
+            $this->stdoutBuffer .= $chunk;
         }
 
         throw new RuntimeException('Timed out waiting for a server response. stderr: ' . (string) stream_get_contents($this->pipes[2]));
